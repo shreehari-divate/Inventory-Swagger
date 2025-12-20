@@ -12,7 +12,7 @@ load_dotenv(find_dotenv())
 app = Flask(__name__)
 
 app.config["JWT_SECRET_KEY"] = os.getenv("SECRETKEY") #secret key
-app.config["JWT_ACCESS_TOKEN"] = timedelta(days=1) #token expires after 1 day 
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=1) #token expires after 1 day 
 app.config["API_SPEC_OPTIONS"] = {
     "security":[{"bearerAuth":[]}]
 }
@@ -32,6 +32,17 @@ app.config["OPENAPI_SECURITY_SCHEMES"] = {
 }
 
 api = Api(app)
+
+api.spec.components.security_scheme(
+    "bearerAuth",{
+        "type":"http",
+        "scheme":"bearer",
+        "bearerFormat":"JWT"
+    }
+
+)
+
+api.security=[{"bearerAuth":[]}]
 jwt = JWTManager(app)
 
 api.register_blueprint(user_app)
