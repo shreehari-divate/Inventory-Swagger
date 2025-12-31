@@ -3,7 +3,8 @@ from datetime import timedelta
 from dotenv import load_dotenv,find_dotenv
 from flask import Flask,config
 from flask_jwt_extended import JWTManager
-from routes.user_routes import *    
+from routes.user_routes import *
+from routes.product_routes import *    
 from flask_smorest import Api
 
 load_dotenv(find_dotenv())
@@ -46,6 +47,7 @@ api.security=[{"bearerAuth":[]}]
 jwt = JWTManager(app)
 
 api.register_blueprint(user_app)
+api.register_blueprint(prouct_app)
 
 if __name__=="__main__":
     app.run(debug=True)

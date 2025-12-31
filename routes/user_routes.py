@@ -21,7 +21,7 @@ user_app = Blueprint("user","__name__",url_prefix="/user")
 #user collection
 user_collection = db.users
 
-user_collection.delete_many({})
+# user_collection.delete_many({})
 
 # adding a admin in user collection
 exisiting_admin = user_collection.find_one({"user_id":admin_id})
