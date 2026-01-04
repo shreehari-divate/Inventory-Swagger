@@ -13,3 +13,15 @@ Product:
 * Added a collection for products which has id,name,type(enum),sku,timestamp,active(bool),quantity and price
 * Created a route for inserting a product into the db
 * Created a route for get call which displays all the product in the db
+
+Fixed the user post such that only inauthroized users can create user 
+
+created order routes
+Order:
+* Added get order routes
+* Added post route such that it takes the current user and then takes a list of products to create a order.
+
+Pending work is role base access to create user, get available product based on types, put,patch,delete order for orders. 
+To delete the order/user user will request for deletion where delete will generate a unique code. Admin has privilage to delete the user/order by entering that unique code. Either use unique code or _id
+Need to find a way how to change the status of payment_status, order_status
+Need to add delivery status to order.

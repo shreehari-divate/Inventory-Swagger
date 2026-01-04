@@ -1,6 +1,7 @@
 import uuid
 import re
 import bcrypt
+from flask import g
 from db import db
 from flask_smorest import Blueprint,abort
 from flask.views import MethodView
@@ -8,7 +9,7 @@ from schema.user_schema import User_Schema,User_Create_Schema, User_reset_passwo
 from db.mongo_db import db
 import os
 from dotenv import load_dotenv,find_dotenv
-from flask_jwt_extended import create_access_token,jwt_required,get_jwt
+from flask_jwt_extended import create_access_token,jwt_required,get_jwt,get_jwt_identity
 
 
 load_dotenv(find_dotenv())
@@ -62,7 +63,11 @@ class Create_User(MethodView):
 
     @user_app.arguments(User_Create_Schema)
     @user_app.response(200,User_Schema)
+    @jwt_required(optional=True)
     def post(self,data):
+
+        if get_jwt_identity():
+            abort(403,message="Already logged in. Cannot create user")
 
         #check if username already exists
         if user_collection.find_one({"user_name":data["user_name"]}):
@@ -138,7 +143,7 @@ class Create_Access_Token(MethodView):
         if not bcrypt.checkpw(data["user_password"].encode("utf-8"),user["user_password"].encode("utf-8")):
             abort(400,message="Bad request, password does not match")    
 
-        token = create_access_token(identity=str(user["_id"]),
+        token = create_access_token(identity=str(user["user_id"]),
                                     additional_claims={"role":"admin" if user["user_name"]==admin_name else "user"}
                                     )
 

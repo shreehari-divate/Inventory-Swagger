@@ -4,7 +4,8 @@ from dotenv import load_dotenv,find_dotenv
 from flask import Flask,config
 from flask_jwt_extended import JWTManager
 from routes.user_routes import *
-from routes.product_routes import *    
+from routes.product_routes import *   
+from routes.order_routes import * 
 from flask_smorest import Api
 
 load_dotenv(find_dotenv())
@@ -48,6 +49,7 @@ jwt = JWTManager(app)
 
 api.register_blueprint(user_app)
 api.register_blueprint(prouct_app)
+api.register_blueprint(order_app)
 
 if __name__=="__main__":
     app.run(debug=True)
