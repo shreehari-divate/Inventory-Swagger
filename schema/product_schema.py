@@ -9,7 +9,6 @@ class Product_Types(enum.Enum):
     REFRIGRATOR = "Refrigrator"
     WASHINGMACHINE = "Washingmachine"
 
-
 class Product_Schema(Schema):
     product_id = fields.Str()
     product_type = fields.Str(required=True,validate=validate.OneOf(["Laptop", "Smartphone", "TV", "Refrigerator", "WashingMachine"]))

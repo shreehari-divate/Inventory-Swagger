@@ -35,8 +35,25 @@ class OrderSchema(Schema):
 
     created_at = fields.DateTime()
 
+    reason = fields.Str()
+    updated_timestamp = fields.DateTime()
+
+
 class PostOrderSchema(OrderSchema):
     class Meta():
         exclude=("order_id","user_name","order_price","order_status","payment_status","created_at","order_quantity")    
     products = fields.List(fields.Nested(ProductPostOrderSchema),required=True)
 
+
+class CancelOrderSchema(Schema):
+    # order_id = fields.Str(required=True)
+    # user_id = fields.Str()
+    # user_name = fields.Str(required=True)
+    reason = fields.Str(required=True)
+    # user_password = fields.Str(required=True)
+
+class UpdateQuantitySchema(Schema):
+    product_quantity = fields.Int(required=True, validate=validate.Range(min=1))    
+
+class UpdateAddressSchema(Schema):
+    update_shipping_address = fields.Str(required=True)    

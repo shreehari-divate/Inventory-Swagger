@@ -48,11 +48,15 @@ class Get_Order(MethodView):
                 "order_status":o.get("order_status"),
                 "payment_status":o.get("payment_status"),
                 "payment_method":o.get("payment_method"),
-                "shipping_address":o.get("shipping_address")
+                "shipping_address":o.get("shipping_address"),
+                "created_at":o.get("created_at"),
+                "reason":o.get("reason"),
+                "updated_timestamp":o.get("updated_timestamp")
             }
             if not order["user_name"]==admin_name:
 
                 orders.append(order)
+
 
         return orders    
     
@@ -74,14 +78,14 @@ class PostOrder(MethodView):
         
         #enrich products
         order_price=0
-        order_quantity=0
+        order_quantity=sum(p["product_quantity"] for p in data["products"])
         enrich_products=[]
         for p in data["products"]:
             product = product_collection.find_one({"sku":p["sku"]})
             if not product:
                 abort(404,message="Product not found")
             unit_price = product["product_price"]
-            total_price = data["order_quantity"]*unit_price
+            total_price = p["product_quantity"]*unit_price
 
             enrich_products.append({
                 "product_id":product["product_id"],
@@ -93,7 +97,6 @@ class PostOrder(MethodView):
                 "total_price":total_price
             })
             order_price+=total_price
-            order_quantity+=p["product_quantity"]
 
         #create order time    
         order_created = datetime.datetime.now()
@@ -115,5 +118,137 @@ class PostOrder(MethodView):
         result=order_collection.insert_one(order_doc)      
         order_doc.pop("_id",None)
 
-        return {"order created at": order_created,"order_details":order_doc}  
+        return {"order_details":order_doc}  
 
+@order_app.route("/cancel_order/<user_id>/<order_id>")
+class CancelOrder(MethodView):
+    @jwt_required()
+    @order_app.arguments(CancelOrderSchema)
+    @order_app.response(204)
+    def patch(self,data,user_id,order_id):
+        
+        claims = get_jwt()
+        if claims.get("role")=="admin":
+            abort(403,message="Only user can delete the order")
+
+        session_user = get_jwt_identity()
+        curr_user = user_id
+        user = user_collection.find_one({"user_id":session_user}) 
+        if not user:
+            abort(404,message="User not found")
+
+        order = order_collection.find_one({"order_id":order_id})
+        user = user_collection.find_one({"user_id":user_id})
+
+        if not order:
+            abort(404,message="Order not found")
+        # if not user:
+        #     abort(404,message="User not found")   
+
+        # if not bcrypt.checkpw(data["user_password"].encode("utf-8"),user["user_password"].encode("utf-8")):
+        #     abort(403,message="Password does not match")    
+
+        # order_collection.delete_one({"order_id":order_id})
+        updated_timestamp = datetime.datetime.now()
+        order_collection.update_one(
+            {"order_id":order_id},
+            {"$set":{
+                "order_status":"Cancelled",
+                "reason":data["reason"],
+                "updated_timestamp":updated_timestamp
+            }
+        })
+
+
+        return f"order cancelled successfully"     
+
+
+@order_app.route("/update_quantity/<order_id>/<product_id>")
+class Update_Quantity(MethodView):
+
+    @jwt_required()
+    @order_app.arguments(UpdateQuantitySchema)
+    def patch(self,data,order_id,product_id):
+        session_user = get_jwt_identity()
+        print(f"session user: {session_user}")
+        order = order_collection.find_one({"order_id":order_id,"user_id":session_user})
+        if not order:
+            abort(404,message="For the given user,there is no such order present")
+
+        shipping_status = order["order_status"]
+        if shipping_status=="Delivered":
+            abort(403,message="Order has been delivered")
+        if shipping_status in ["Shipped", "Cancelled"]:
+            abort(403,message=f"Order cannot be updated as it is {shipping_status}")    
+
+
+        #find product in the given order
+        product = None
+        for p in order["products"]:
+            if p["product_id"]==product_id:
+                product=p
+                break
+        if not product:
+            abort(404,message="product not found")
+
+        new_quantity = data["product_quantity"]
+        product["product_quantity"] = new_quantity
+        product["total_price"] = new_quantity*product["product_price"]
+
+        order_quantity = sum(p["product_quantity"] for p in order["products"])
+        order_price = sum(p["total_price"] for p in order["products"])            
+
+        updated_timestamp = datetime.datetime.now()
+
+        order_collection.update_one(
+            {"order_id": order_id},
+            {"$set": {
+                "products": order["products"],
+                "order_quantity": order_quantity,
+                "order_price": order_price,
+                "updated_timestamp": updated_timestamp
+            }}
+        )
+
+        # return updated order
+        updated_order = order_collection.find_one({"order_id": order_id})
+        updated_order.pop("_id", None)
+        return updated_order
+
+
+@order_app.route("/update_shipping_address/<order_id>")
+class Update_Address(MethodView):
+    @jwt_required()
+    @order_app.arguments(UpdateAddressSchema)
+    def patch(self,data,order_id):
+        session_user = get_jwt_identity()
+        print(f"session user: {session_user}")
+        order = order_collection.find_one({"order_id":order_id,"user_id":session_user})
+        if not order:
+            abort(404,message="For the given user,there is no such order present")
+
+        shipping_status = order["order_status"]
+        if shipping_status=="Delivered":
+            abort(403,message="Order has been delivered")
+        if shipping_status=="Cancelled":
+            abort(403,message=f"Order cannot be updated as it is {shipping_status}")    
+
+
+        #update the shipping address
+        current_address = order["shipping_address"]
+        updated_address = data["update_shipping_address"]
+
+        updated_timestamp = datetime.datetime.now()
+
+        order_collection.update_one(
+            {"order_id": order_id},
+            {"$set": {
+                "shipping_address": updated_address,
+                "updated_timestamp": updated_timestamp
+            }}
+        )
+
+        # return updated order
+        updated_order = order_collection.find_one({"order_id": order_id})
+        updated_order.pop("_id", None)
+        return updated_order
