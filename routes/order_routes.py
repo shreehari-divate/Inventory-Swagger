@@ -20,7 +20,7 @@ admin_name = os.getenv("ADMINNAME")
 order_app = Blueprint("order",__name__,url_prefix="/orders")
 
 #add a collection
-order_collection = db.users
+order_collection = db.orders
 
 
 '''
@@ -252,3 +252,20 @@ class Update_Address(MethodView):
         updated_order = order_collection.find_one({"order_id": order_id})
         updated_order.pop("_id", None)
         return updated_order
+    
+
+@order_app.route("/user_status/<user_id>")
+class UserOrderStatus(MethodView):
+       @jwt_required()
+       def get(self,user_id):
+        current_user = get_jwt_identity()
+
+        if current_user!=user_id:
+            abort(403,message="User ID does not match with the session user")
+        orders = list(order_collection.find({"user_id":current_user}))
+        if not orders:
+            return "No orders placed yet"
+        for o in orders:
+            o.pop("_id",None)
+        return orders,200
+        

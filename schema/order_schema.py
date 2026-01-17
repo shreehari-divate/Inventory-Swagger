@@ -57,3 +57,5 @@ class UpdateQuantitySchema(Schema):
 
 class UpdateAddressSchema(Schema):
     update_shipping_address = fields.Str(required=True)    
+
+

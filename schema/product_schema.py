@@ -3,7 +3,7 @@ from marshmallow import Schema,fields,validate
 import enum
 
 class Product_Types(enum.Enum):
-    LAPTOP = "Lpatop"
+    LAPTOP = "Laptop"
     SMARTPHONE = "Smartphone"
     TV = "TV"
     REFRIGRATOR = "Refrigrator"
@@ -31,4 +31,7 @@ class Update_Product_Schema(Product_Schema):
         exclude=("product_id","timestamp","product_type")
     
     
-    
+class Patch_Product_Schema(Schema):
+    product_price = fields.Float()
+    quantity_present = fields.Int()
+    is_active = fields.Bool()    

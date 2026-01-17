@@ -29,7 +29,8 @@ class Get_Product(MethodView):
     @prouct_app.response(200)
     def get(self):
         claims = get_jwt()
-        is_admin = claims.get("role")=="admin"
+        if claims.get("role") != "admin":
+            abort(403, message="Admins only")
         
         products = list(product_collection.find({}))
         for p in products:
@@ -47,11 +48,13 @@ Add Products
 
 @prouct_app.route("/add_products")
 class Add_Product(MethodView):
-
+    @jwt_required()
     @prouct_app.arguments(Add_Product_Schema)
     @prouct_app.response(201)
     def post(self,data):
-
+        claims = get_jwt()
+        if claims.get("role") != "admin":
+            abort(403, message="Admins only")
         #create product id
         product_id = str(uuid.uuid4())
 
@@ -77,7 +80,7 @@ class Add_Product(MethodView):
         #sku-stock keeping unit
         sku = data["sku"]
         if product_collection.find_one({"sku":sku}):
-            abort(400,message="sku exists")
+            abort(409,message="sku exists")
 
         #timestamp
         tn = datetime.now()
@@ -110,26 +113,32 @@ Delete the product
 '''
 @prouct_app.route("/delete_product/<product_id>")
 class Delete_Product(MethodView):
+    @jwt_required()
     @prouct_app.response(201)
     def delete(self,product_id):
-        
+        claims = get_jwt()
+        if claims.get("role") != "admin":
+            abort(403, message="Admins only")
         prod_id = str(product_id)
 
         if not product_collection.find_one({"product_id":prod_id}):
             abort(404,message="Product not found")
 
         product_collection.delete_one({"product_id":product_id})
-        return "Product deleted successfully"    
+        return {"message": "Product deleted successfully"}    
 
 '''
 Update the product
 '''    
 @prouct_app.route("/update_product/<product_id>")
 class Update_Products(MethodView):
+    @jwt_required
     @prouct_app.arguments(Update_Product_Schema)
     @prouct_app.response(201)
     def put(self,data,product_id):
-        
+        claims = get_jwt()
+        if claims.get("role") != "admin":
+            abort(403, message="Admins only")
         if not product_collection.find_one({"product_id":product_id}):
             abort(404,message="Product does not exists")
 
@@ -141,44 +150,54 @@ class Update_Products(MethodView):
                 "product_price":data["product_price"],
                 "quantity_present":data["quantity_present"],
                 "is_active":data["is_active"],
-                "sku":data["sku"]
+                "sku":data["sku"],
+                "updated_timestamp": datetime.now()
             }}
         ) 
-        return "product updated"
-     
+        return {"message": "Product updated successfully"}
 
-@prouct_app.route("/update/<product_id>/<quantity_present>/<product_price>/<is_active>")
+    
+@prouct_app.route("/update/<product_id>")
 class Update_Product(MethodView):
-    @prouct_app.response(201)
-    def patch(self,product_id,quantity_present,product_price,is_active):
-        
-        if not product_collection.find_one({"product_id":product_id}):
-            abort(404,message="Product does not exists")
 
-        product = product_collection.find_one( {
-            "product_id": product_id}, 
-             {"_id": 0, 
-              "product_price": 1, 
-              "quantity_present": 1, 
-              "is_active": 1}
-                )
+    @jwt_required()
+    @prouct_app.arguments(Patch_Product_Schema)  
+    @prouct_app.response(200)
+    def patch(self, data, product_id):
+        claims = get_jwt()
+        if claims.get("role") != "admin":
+            abort(403, message="Admins only")
 
-        old_price = product["product_price"]
-        old_quantity = product["quantity_present"]
-        old_is_active = product["is_active"]
+        product = product_collection.find_one({"product_id": product_id})
+        if not product:
+            abort(404, message="Product does not exist")
+
+        # Save old values for response
+        old_price = product.get("product_price")
+        old_quantity = product.get("quantity_present")
+        old_is_active = product.get("is_active")
+
+        # Update fields dynamically
+        update_fields = {}
+        if "product_price" in data:
+            update_fields["product_price"] = data["product_price"]
+        if "quantity_present" in data:
+            update_fields["quantity_present"] = data["quantity_present"]
+        if "is_active" in data:
+            update_fields["is_active"] = data["is_active"]
+
+        update_fields["updated_timestamp"] = datetime.now()
 
         product_collection.update_one(
-            {"product_id":product_id},
-            {"$set":{
-                "product_price":product_price,
-                "quantity_present":quantity_present,
-                "is_active":is_active
-            }}
-        ) 
-        return {"old_price":old_price,
-                "new_price":product_price,
-                "old_quantity":old_quantity,
-                "new_quantity":quantity_present,
-                "old_active_status":old_is_active,
-                "new_active_status":is_active}    
-    
+            {"product_id": product_id},
+            {"$set": update_fields}
+        )
+
+        return {
+            "old_price": old_price,
+            "new_price": data.get("product_price", old_price),
+            "old_quantity": old_quantity,
+            "new_quantity": data.get("quantity_present", old_quantity),
+            "old_active_status": old_is_active,
+            "new_active_status": data.get("is_active", old_is_active)
+        }

@@ -12,3 +12,5 @@ flask-jwt-extended
 python-dotenv
 bcrypt
 marshmallow_enum
+pytest
+pytest-flask

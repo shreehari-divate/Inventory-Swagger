@@ -17,22 +17,10 @@ load_dotenv(find_dotenv())
 admin_name = os.getenv("ADMINNAME")
 admin_password = os.getenv("ADMINPASSWORD")
 admin_id = os.getenv("ADMINID")
+
 user_app = Blueprint("user","__name__",url_prefix="/user")
-
-#user collection
+# #user collection
 user_collection = db.users
-
-# user_collection.delete_many({})
-
-# adding a admin in user collection
-exisiting_admin = user_collection.find_one({"user_id":admin_id})
-hashd_admin_pwd = bcrypt.hashpw(admin_password.encode("utf-8"),bcrypt.gensalt())
-if not exisiting_admin:
-    user_collection.insert_one({
-        "user_id":admin_id,
-        "user_name":admin_name,
-        "user_password":hashd_admin_pwd.decode("utf-8")
-    })
 
 
 '''
@@ -52,6 +40,8 @@ class Get_User(MethodView):
         
         users = list(user_collection.find({"user_id":{"$ne":admin_id}}))
         # present_users = users
+        for u in users:
+            u.pop("_id",None)
         return users
 
 '''
@@ -79,6 +69,7 @@ class Create_User(MethodView):
 
         #add the user id 
         data["user_id"] = new_user_id
+        data["user_role"] = "user"
 
         #hash the password and check if it satisfies the condition
         password_pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[`~!@#$%^&*_:|<>])[A-Za-z\d`~!@#$%^&*_:|<>]{4,}$"
@@ -96,24 +87,26 @@ class Create_User(MethodView):
             abort(500,message="Unable to create User")
 
         new_user = user_collection.find_one({"_id":result.inserted_id})
+        new_user.pop("_id", None)
 
         return new_user
     
 
 @user_app.route("/reset_password/<user_name>")
 class Reset_User_Password(MethodView):
-
+    @jwt_required()
     @user_app.arguments(User_reset_password)
     @user_app.response(201)
     def patch(self,data,user_name):
 
-        user = user_collection.find_one({"user_name":user_name})
+        current_user_id = get_jwt_identity()
+        user = user_collection.find_one({"user_id": current_user_id})
 
         if not user:
             abort(404,message="No such username present")
 
         if not bcrypt.checkpw(data["user_password"].encode("utf-8"), user["user_password"].encode("utf-8")):
-            abort(400,message="Bad Request,password does not match")   
+            abort(401,message="Bad Request,password does not match")   
 
         updated_password = bcrypt.hashpw(data["new_password"].encode("utf-8"),bcrypt.gensalt()).decode("utf-8") 
         user_collection.update_one(
@@ -127,7 +120,7 @@ class Reset_User_Password(MethodView):
             }
         )   
 
-        return "Password updated successfully"
+        return {"message": "Password updated successfully"}
     
 @user_app.route("/generate_token/<user_name>")
 class Create_Access_Token(MethodView):
@@ -141,7 +134,7 @@ class Create_Access_Token(MethodView):
             abort(404,message="User not found")
 
         if not bcrypt.checkpw(data["user_password"].encode("utf-8"),user["user_password"].encode("utf-8")):
-            abort(400,message="Bad request, password does not match")    
+            abort(401,message="Bad request, password does not match")    
 
         token = create_access_token(identity=str(user["user_id"]),
                                     additional_claims={"role":"admin" if user["user_name"]==admin_name else "user"}
