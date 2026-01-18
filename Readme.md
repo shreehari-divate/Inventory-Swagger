@@ -23,6 +23,10 @@ Order:
 * User can cancel the order by providing the user_id, order_id and valid reason to cancel the order. This order cancel will be a patch request.
 * User can update the product quantity only through patch api
 * User can check his order status through user_order_status api
+* Admin can update the order status using patch 
+ 
+ Added unit test cases
+
 
 Pending work is role base access to create user, get available product based on types order for orders. 
 not necessary-(To delete the order/user user will request for deletion where delete will generate a unique code. Admin has privilage to delete the user/order by entering that unique code. Either use unique code or _id) will do if required as cancel is now patch not delete request.
