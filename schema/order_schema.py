@@ -58,4 +58,7 @@ class UpdateQuantitySchema(Schema):
 class UpdateAddressSchema(Schema):
     update_shipping_address = fields.Str(required=True)    
 
+class UpdateOrderStatusSchema(Schema):
+    order_status = fields.Str(required=True,validate=validate.OneOf(["Pending", "Confirmed", "Shipped", "Delivered"]))    
+
 

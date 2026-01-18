@@ -84,6 +84,15 @@ class PostOrder(MethodView):
             product = product_collection.find_one({"sku":p["sku"]})
             if not product:
                 abort(404,message="Product not found")
+            #Check if product is active
+            if not product.get("is_active", False):
+                abort(400, message=f"Product {product['product_name']} is not available")
+            
+            #Check stock availability
+            available_qty = product.get("quantity_present", 0)
+            if available_qty < p["product_quantity"]:
+                abort(400, message=f"Insufficient stock for {product['product_name']}. Available: {available_qty}")
+                
             unit_price = product["product_price"]
             total_price = p["product_quantity"]*unit_price
 
@@ -120,28 +129,39 @@ class PostOrder(MethodView):
 
         return {"order_details":order_doc}  
 
-@order_app.route("/cancel_order/<user_id>/<order_id>")
+@order_app.route("/cancel_order/<order_id>")
 class CancelOrder(MethodView):
     @jwt_required()
     @order_app.arguments(CancelOrderSchema)
-    @order_app.response(204)
-    def patch(self,data,user_id,order_id):
+    @order_app.response(200)
+    def patch(self,data,order_id):
         
         claims = get_jwt()
         if claims.get("role")=="admin":
             abort(403,message="Only user can delete the order")
 
         session_user = get_jwt_identity()
-        curr_user = user_id
-        user = user_collection.find_one({"user_id":session_user}) 
-        if not user:
-            abort(404,message="User not found")
+        # curr_user = user_id
+        # user = user_collection.find_one({"user_id":session_user}) 
+        # if not user:
+        #     abort(404,message="User not found")
 
-        order = order_collection.find_one({"order_id":order_id})
-        user = user_collection.find_one({"user_id":user_id})
-
+        # order = order_collection.find_one({"order_id":order_id})
+        # user = user_collection.find_one({"user_id":session_user})
+        order = order_collection.find_one({
+            "order_id": order_id,
+            "user_id": session_user
+        })
+        
         if not order:
-            abort(404,message="Order not found")
+            abort(404, message="Order not found or you don't have permission to cancel it")
+        
+        current_status = order.get("order_status")
+        if current_status in ["Delivered", "Cancelled"]:
+            abort(400, message=f"Cannot cancel order with status: {current_status}")
+        
+        if current_status == "Shipped":
+            abort(400, message="Cannot cancel order that has already shipped")
         # if not user:
         #     abort(404,message="User not found")   
 
@@ -168,6 +188,7 @@ class Update_Quantity(MethodView):
 
     @jwt_required()
     @order_app.arguments(UpdateQuantitySchema)
+    @order_app.response(200)
     def patch(self,data,order_id,product_id):
         session_user = get_jwt_identity()
         print(f"session user: {session_user}")
@@ -220,6 +241,7 @@ class Update_Quantity(MethodView):
 class Update_Address(MethodView):
     @jwt_required()
     @order_app.arguments(UpdateAddressSchema)
+    @order_app.response(200)
     def patch(self,data,order_id):
         session_user = get_jwt_identity()
         print(f"session user: {session_user}")
@@ -254,18 +276,68 @@ class Update_Address(MethodView):
         return updated_order
     
 
-@order_app.route("/user_status/<user_id>")
+@order_app.route("/user_order")
 class UserOrderStatus(MethodView):
        @jwt_required()
-       def get(self,user_id):
+       @order_app.response(200)
+       def get(self):
         current_user = get_jwt_identity()
 
-        if current_user!=user_id:
-            abort(403,message="User ID does not match with the session user")
         orders = list(order_collection.find({"user_id":current_user}))
         if not orders:
             return "No orders placed yet"
         for o in orders:
             o.pop("_id",None)
-        return orders,200
+        return orders
+       
+@order_app.route("/update_order_status/<order_id>")
+class Update_Order_Status(MethodView):
+
+    @jwt_required()
+    @order_app.arguments(UpdateOrderStatusSchema)
+    @order_app.response(200)
+    def patch(self,data,order_id):
+        claims = get_jwt()
+        if claims.get("role")!="admin":
+            abort(403,message="Admins only")
+
+        order = order_collection.find_one({"order_id":order_id})
+        if not order:
+            abort(404,message="Order does not exist")
+
+        new_status = data["order_status"]
+        current_status = order.get("order_status")
+        if current_status=="Cancelled" or current_status=="Delivered":
+            abort(400,message=f"Cannot change status of order which is {current_status}")
+
+        # Simple status flow validation
+        valid_transitions = {
+            "Pending": ["Confirmed", "Cancelled"],
+            "Confirmed": ["Shipped", "Cancelled"],
+            "Shipped": ["Delivered"],
+            "Delivered": [],
+            "Cancelled": []
+        }
+
+        if new_status not in valid_transitions.get(current_status, []):
+            abort(400, message=f"Invalid status transition from {current_status} to {new_status}")
+
+        updated_timestamp = datetime.datetime.now()
+
+        order_collection.update_one(
+            {"order_id": order_id},
+            {"$set": {
+                "order_status": new_status,
+                "updated_timestamp": updated_timestamp
+            }}
+        )
+
+        updated_order = order_collection.find_one({"order_id": order_id})
+        updated_order.pop("_id", None)
+        return {
+            "message": "Order status updated successfully",
+            "order_id": order_id,
+            "old_status": current_status,
+            "new_status": new_status
+        }       
         

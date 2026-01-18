@@ -9,6 +9,9 @@ class TestUserRoutes:
     
     def test_create_user_success(self, client, mock_db):
         """Test successful user creation"""
+        # Reset mock
+        mock_db.users.reset_mock()
+        
         # Mock that username doesn't exist, then return the new user
         new_user = {
             "_id": ObjectId(),
@@ -38,6 +41,8 @@ class TestUserRoutes:
     
     def test_create_user_weak_password(self, client, mock_db):
         """Test user creation with weak password"""
+        mock_db.users.reset_mock()
+        
         response = client.post(
             '/user/create_user',
             json={
@@ -51,6 +56,7 @@ class TestUserRoutes:
     
     def test_create_user_duplicate_username(self, client, mock_db):
         """Test user creation with existing username"""
+        mock_db.users.reset_mock()
         mock_db.users.find_one.return_value = {
             "_id": ObjectId(),
             "user_name": "existinguser"
@@ -69,6 +75,7 @@ class TestUserRoutes:
     
     def test_login_success(self, client, sample_user, mock_db):
         """Test successful login"""
+        mock_db.users.reset_mock()
         mock_db.users.find_one.return_value = sample_user
         
         response = client.post(
@@ -86,6 +93,7 @@ class TestUserRoutes:
     
     def test_login_invalid_credentials(self, client, sample_user, mock_db):
         """Test login with invalid password"""
+        mock_db.users.reset_mock()
         mock_db.users.find_one.return_value = sample_user
         
         response = client.post(
@@ -100,6 +108,7 @@ class TestUserRoutes:
     
     def test_login_nonexistent_user(self, client, mock_db):
         """Test login with non-existent user"""
+        mock_db.users.reset_mock()
         mock_db.users.find_one.return_value = None
         
         response = client.post(
@@ -114,6 +123,7 @@ class TestUserRoutes:
     
     def test_get_users_admin(self, client, admin_token, mock_db):
         """Test getting all users as admin"""
+        mock_db.users.reset_mock()
         users = [
             {"user_id": "user-001", "user_name": "user1"},
             {"user_id": "user-002", "user_name": "user2"}
@@ -143,13 +153,28 @@ class TestUserRoutes:
         assert response.status_code == 403
     
     
-    def test_reset_password_success(self, client, sample_user, mock_db):
-        """Test successful password reset (no JWT required in your current implementation)"""
-        mock_db.users.find_one.return_value = sample_user
+    def test_reset_password_success(self, client, user_token,mock_db):
+        """Test successful password reset"""
+        mock_db.users.reset_mock()
+        
+        # Create user with known password hash
+        hashed_password = bcrypt.hashpw("Test@123".encode("utf-8"), bcrypt.gensalt())
+        test_user = {
+            "_id": ObjectId(),
+            "user_id": "user-001",
+            "user_name": "testuser",
+            "user_password": hashed_password.decode("utf-8"),
+            "user_role": "user"
+        }
+        
+        # Set return value (not side_effect)
+        mock_db.users.find_one.return_value = test_user
+        mock_db.users.find_one.side_effect = None  # Clear any side_effect
         mock_db.users.update_one.return_value = MagicMock()
         
         response = client.patch(
             '/user/reset_password/testuser',
+            headers={'Authorization': f'Bearer {user_token}'},
             json={
                 "user_password": "Test@123",
                 "new_password": "NewTest@123"
@@ -161,12 +186,26 @@ class TestUserRoutes:
         assert data['message'] == "Password updated successfully"
     
     
-    def test_reset_password_wrong_current(self, client, sample_user, mock_db):
+    def test_reset_password_wrong_current(self, client, user_token,mock_db):
         """Test password reset with wrong current password"""
-        mock_db.users.find_one.return_value = sample_user
+        mock_db.users.reset_mock()
+        
+        # Create user with known password hash
+        hashed_password = bcrypt.hashpw("Test@123".encode("utf-8"), bcrypt.gensalt())
+        test_user = {
+            "_id": ObjectId(),
+            "user_id": "user-001",
+            "user_name": "testuser",
+            "user_password": hashed_password.decode("utf-8"),
+            "user_role": "user"
+        }
+        
+        mock_db.users.find_one.return_value = test_user
+        mock_db.users.find_one.side_effect = None  # Clear any side_effect
         
         response = client.patch(
             '/user/reset_password/testuser',
+            headers={'Authorization': f'Bearer {user_token}'},
             json={
                 "user_password": "WrongPassword@123",
                 "new_password": "NewTest@123"
@@ -176,12 +215,15 @@ class TestUserRoutes:
         assert response.status_code == 401
     
     
-    def test_reset_password_user_not_found(self, client, mock_db):
+    def test_reset_password_user_not_found(self, client,user_token, mock_db):
         """Test password reset for non-existent user"""
+        mock_db.users.reset_mock()
         mock_db.users.find_one.return_value = None
+        mock_db.users.find_one.side_effect = None  # Clear any side_effect
         
         response = client.patch(
             '/user/reset_password/nonexistent',
+            headers={'Authorization': f'Bearer {user_token}'},
             json={
                 "user_password": "Test@123",
                 "new_password": "NewTest@123"

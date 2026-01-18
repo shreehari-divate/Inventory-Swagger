@@ -29,8 +29,9 @@ class Get_Product(MethodView):
     @prouct_app.response(200)
     def get(self):
         claims = get_jwt()
-        if claims.get("role") != "admin":
-            abort(403, message="Admins only")
+        is_admin = claims.get("role") == "admin"
+        # if claims.get("role") != "admin":
+        #     abort(403, message="Admins only")
         
         products = list(product_collection.find({}))
         for p in products:
@@ -48,9 +49,10 @@ Add Products
 
 @prouct_app.route("/add_products")
 class Add_Product(MethodView):
-    @jwt_required()
+    
     @prouct_app.arguments(Add_Product_Schema)
     @prouct_app.response(201)
+    @jwt_required()
     def post(self,data):
         claims = get_jwt()
         if claims.get("role") != "admin":
@@ -103,7 +105,7 @@ class Add_Product(MethodView):
         }   
         product_collection.insert_one(product_to_be_inserted)
 
-        return {"id":product_id,
+        return {"product_id":product_id,
                 "product_type":prd_type,
                 "product_name":prd_name
         }
@@ -114,7 +116,7 @@ Delete the product
 @prouct_app.route("/delete_product/<product_id>")
 class Delete_Product(MethodView):
     @jwt_required()
-    @prouct_app.response(201)
+    @prouct_app.response(200)
     def delete(self,product_id):
         claims = get_jwt()
         if claims.get("role") != "admin":
@@ -130,9 +132,9 @@ class Delete_Product(MethodView):
 '''
 Update the product
 '''    
-@prouct_app.route("/update_product/<product_id>")
+@prouct_app.route("/update_product/<string:product_id>")
 class Update_Products(MethodView):
-    @jwt_required
+    @jwt_required()
     @prouct_app.arguments(Update_Product_Schema)
     @prouct_app.response(201)
     def put(self,data,product_id):
@@ -159,10 +161,10 @@ class Update_Products(MethodView):
     
 @prouct_app.route("/update/<product_id>")
 class Update_Product(MethodView):
-
-    @jwt_required()
+    
     @prouct_app.arguments(Patch_Product_Schema)  
     @prouct_app.response(200)
+    @jwt_required()
     def patch(self, data, product_id):
         claims = get_jwt()
         if claims.get("role") != "admin":
