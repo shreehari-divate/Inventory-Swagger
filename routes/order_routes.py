@@ -64,7 +64,9 @@ class Get_Order(MethodView):
 class PostOrder(MethodView):
 
     @jwt_required()
-    @order_app.arguments(PostOrderSchema)
+    @order_app.arguments(PostOrderSchema,description="Create a new order",example={
+        "user_id":"user-001","products":[{"sku":"APPLE-MBP-001","product_quantity":2}],
+        "payment_method":"Credit Card","shipping_address":"123 Main St"})
     @order_app.response(201)
     def post(self,data):
         session_user = get_jwt_identity()
@@ -132,7 +134,8 @@ class PostOrder(MethodView):
 @order_app.route("/cancel_order/<order_id>")
 class CancelOrder(MethodView):
     @jwt_required()
-    @order_app.arguments(CancelOrderSchema)
+    @order_app.arguments(CancelOrderSchema,description="Cancel an order",example={
+        "reason":"Changed my mind"})
     @order_app.response(200)
     def patch(self,data,order_id):
         
@@ -187,7 +190,8 @@ class CancelOrder(MethodView):
 class Update_Quantity(MethodView):
 
     @jwt_required()
-    @order_app.arguments(UpdateQuantitySchema)
+    @order_app.arguments(UpdateQuantitySchema,description="Update product quantity in an order",example={
+        "product_quantity":3})
     @order_app.response(200)
     def patch(self,data,order_id,product_id):
         session_user = get_jwt_identity()
@@ -240,7 +244,8 @@ class Update_Quantity(MethodView):
 @order_app.route("/update_shipping_address/<order_id>")
 class Update_Address(MethodView):
     @jwt_required()
-    @order_app.arguments(UpdateAddressSchema)
+    @order_app.arguments(UpdateAddressSchema,description="Update shipping address",example={
+        "update_shipping_address":"456 New Address, City, 67890"})
     @order_app.response(200)
     def patch(self,data,order_id):
         session_user = get_jwt_identity()
@@ -294,7 +299,8 @@ class UserOrderStatus(MethodView):
 class Update_Order_Status(MethodView):
 
     @jwt_required()
-    @order_app.arguments(UpdateOrderStatusSchema)
+    @order_app.arguments(UpdateOrderStatusSchema,description="Update order status",example={
+        "order_status":"Shipped"})
     @order_app.response(200)
     def patch(self,data,order_id):
         claims = get_jwt()

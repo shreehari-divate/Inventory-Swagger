@@ -50,7 +50,10 @@ Add Products
 @prouct_app.route("/add_products")
 class Add_Product(MethodView):
     
-    @prouct_app.arguments(Add_Product_Schema)
+    @prouct_app.arguments(Add_Product_Schema,description="Add a new product",example={
+        "product_type":"Laptop","product_name":"MacBook Pro",
+        "product_desc":"Apple laptop","product_price":70000,
+        "quantity_present":10,"is_active":True,"sku":"APPLE-MBP-001"})
     @prouct_app.response(201)
     @jwt_required()
     def post(self,data):
@@ -135,7 +138,9 @@ Update the product
 @prouct_app.route("/update_product/<string:product_id>")
 class Update_Products(MethodView):
     @jwt_required()
-    @prouct_app.arguments(Update_Product_Schema)
+    @prouct_app.arguments(Update_Product_Schema,description="Update product details",example={
+        "product_name":"MacBook Pro 2023","product_desc":"Apple laptop updated",
+        "product_price":74999.99,"quantity_present":8,"is_active":True,"sku":"APPLE-MBP-002"})
     @prouct_app.response(201)
     def put(self,data,product_id):
         claims = get_jwt()
@@ -162,7 +167,8 @@ class Update_Products(MethodView):
 @prouct_app.route("/update/<product_id>")
 class Update_Product(MethodView):
     
-    @prouct_app.arguments(Patch_Product_Schema)  
+    @prouct_app.arguments(Patch_Product_Schema,description="Partially update product details",example={
+        "product_price":74999.99})  
     @prouct_app.response(200)
     @jwt_required()
     def patch(self, data, product_id):

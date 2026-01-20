@@ -51,7 +51,7 @@ Create User
 @user_app.route("/create_user")
 class Create_User(MethodView):
 
-    @user_app.arguments(User_Create_Schema)
+    @user_app.arguments(User_Create_Schema,description="Create a new user",example={"user_name":"Arjun","user_password":"Password@123"})
     @user_app.response(200,User_Schema)
     @jwt_required(optional=True)
     def post(self,data):
@@ -95,7 +95,10 @@ class Create_User(MethodView):
 @user_app.route("/reset_password/<user_name>")
 class Reset_User_Password(MethodView):
     @jwt_required()
-    @user_app.arguments(User_reset_password)
+    @user_app.arguments(User_reset_password,description="Reset password",example={
+        "user_password":"OldPassword@123",
+        "new_password":"NewPassword@123"
+    })
     @user_app.response(201)
     def patch(self,data,user_name):
 
@@ -125,7 +128,9 @@ class Reset_User_Password(MethodView):
 @user_app.route("/generate_token/<user_name>")
 class Create_Access_Token(MethodView):
     
-    @user_app.arguments(Token_Schema)
+    @user_app.arguments(Token_Schema,description="Generate access token",example={
+        "user_password":"Password@123"
+    })
     def post(self,data,user_name):
         
         user = user_collection.find_one({"user_name":user_name})
