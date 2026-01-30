@@ -1,4 +1,4 @@
-#Inventory Management System
+# Inventory Management System
 A full‑stack inventory management system designed for a wholesale business.
 This application helps wholesalers manage bulk product orders, track stock levels, and streamline customer interactions.
 - Users (buyers) can log in, browse products, and place bulk orders.
@@ -6,8 +6,9 @@ This application helps wholesalers manage bulk product orders, track stock level
 
 
 
-#Features
-##User Management
+## Features
+
+## User Management
 - Admin profile created with a unique name and password.
 - User authentication routes for login and account creation.
 - Users must have an account to access inventory; otherwise, they can create one via the POST API in the user section.
