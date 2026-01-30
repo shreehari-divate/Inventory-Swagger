@@ -1,5 +1,5 @@
 # Inventory Management System
-A full‑stack inventory management system designed for a wholesale business.
+A inventory management system designed for a wholesale business.
 This application helps wholesalers manage bulk product orders, track stock levels, and streamline customer interactions.
 - Users (buyers) can log in, browse products, and place bulk orders.
 - Admins (wholesaler staff) can manage product catalogs, update quantities, monitor orders, and oversee user accounts.
@@ -8,52 +8,46 @@ This application helps wholesalers manage bulk product orders, track stock level
 
 ## Features
 
-## User Management
-- Admin profile created with a unique name and password.
+## 1. User Management
+- Secure admin profile with unique name and password.
 - User authentication routes for login and account creation.
-- Users must have an account to access inventory; otherwise, they can create one via the POST API in the user section.
-- Only admins can view all users.
-- Rate limiter added to prevent abuse when creating users.
-📦 Product Management
-- Product collection includes:
+- Buyers must have an account to access inventory; otherwise, they can create one via the POST API in the user section.
+- Only admins can view all registered buyers.
+- Rate limiter added to prevent abuse when creating accounts.
+
+## 2. Product Management
+- Product catalog includes:
 - id, name, type (enum), sku, timestamp, active (bool), quantity, price.
 - Routes:
-- POST → Insert a product into the database.
-- GET → Retrieve all products.
-- Fixed user creation logic so only unauthorized users can create new accounts.
+- POST → Add new products to the wholesaler’s catalog.
+- GET → Retrieve all available products.
+- Admins can update product details, adjust stock levels, and remove inactive products.
 
-🛒 Order Management
-- GET → Retrieve orders.
-- POST → Create an order for the current user with a list of products.
+
+## 3. Order Management
+- GET → Retrieve all orders.
+- POST → Buyers can place bulk orders by selecting product type, product, and quantity.
 - PATCH → Cancel an order by providing user_id, order_id, and a valid reason.
-- PATCH → Update product quantity.
-- GET → Check order status via user_order_status API.
-- PATCH (Admin only) → Update order status.
+- PATCH → Update product quantity (admin only).
+- GET → Buyers can check their order status via user_order_status.
+- PATCH (Admin only) → Admins can update order status (e.g., shipped, delivered).
 
-🛡️ Security & Access Control
-- JWT authentication with role‑based access (admin vs user).
+
+## 4. Security & Access Control
+- JWT authentication with role‑based access (admin vs buyer).
+- Passwords stored securely using bcrypt hashing.
 - Admin privileges:
 - Manage products (CRUD).
-- View all users.
-- Delete users.
-- Update order status.
-- Passwords stored securely using bcrypt hashing.
+- View and delete buyers.
+- Update order statuses.
 
-🧪 Testing
+
+## 5. Testing
 - Unit test cases added for user, product, and order routes.
 - pytest and pytest-flask used for automated testing.
 
-📖 Documentation
-- Enhanced Swagger/OpenAPI documentation:
-- Detailed descriptions.
-- Example payloads for clarity.
 
-⚡ Rate Limiting
-- Implemented using Flask-Limiter.
-- Default limits: 200 requests/day, 50 requests/hour.
-- Helps prevent abuse of user creation and other sensitive endpoints.
-
-🛠️ Tech Stack
+## 6. Tech Stack
 - Backend: Flask 3.x
 - Database: MongoDB Atlas (via PyMongo)
 - Schemas: Marshmallow
@@ -63,7 +57,7 @@ This application helps wholesalers manage bulk product orders, track stock level
 - Testing: pytest, pytest-flask
 - Deployment: Render (Gunicorn)
 
-🚀 Deployment (Render)
+## 7. Deployment (Render)
 - Push repo to GitHub.
 - Create a new Web Service in Render.
 - Connect your GitHub repo.
