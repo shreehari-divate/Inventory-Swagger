@@ -49,6 +49,36 @@ def create_app(config_name=None):
     api.register_blueprint(user_app)
     api.register_blueprint(prouct_app)
     api.register_blueprint(order_app)
+
+
+
+
+    # Health check
+    @app.route('/health')
+    def health_check():
+        from db.mongo_db import db
+        try:
+            db.command('ping')
+            return {
+                'status': 'healthy',
+                'database': 'connected',
+                'environment': env
+            }, 200
+        except Exception as e:
+            return {'status': 'unhealthy', 'error': str(e)}, 503
+    
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found(error):
+        return {"error": "Resource not found"}, 404
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        return {"error": "Internal server error"}, 500
+    
+
+
+
     return app
 
 app = create_app()
