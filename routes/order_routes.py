@@ -12,6 +12,7 @@ from flask_jwt_extended import create_access_token,jwt_required,get_jwt,get_jwt_
 import datetime
 from routes.user_routes import user_collection
 from routes.product_routes import product_collection
+from flask import current_app
 
 load_dotenv(find_dotenv())
 admin_name = os.getenv("ADMINNAME")

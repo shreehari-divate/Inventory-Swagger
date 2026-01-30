@@ -13,4 +13,5 @@ python-dotenv
 bcrypt
 marshmallow_enum
 pytest
-pytest-flask
+pytest-flask    
+Flask-Limiter==3.5.0

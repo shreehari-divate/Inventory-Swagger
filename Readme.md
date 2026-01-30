@@ -25,7 +25,11 @@ Order:
 * User can check his order status through user_order_status api
 * Admin can update the order status using patch 
  
- Added unit test cases
+* Added unit test cases
+
+* Enhanced the swagger documentation by updating the description and example
+
+* Added rate limiter for creating the user 
 
 
 Pending work is role base access to create user, get available product based on types order for orders. 

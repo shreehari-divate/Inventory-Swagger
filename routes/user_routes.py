@@ -10,6 +10,10 @@ from db.mongo_db import db
 import os
 from dotenv import load_dotenv,find_dotenv
 from flask_jwt_extended import create_access_token,jwt_required,get_jwt,get_jwt_identity
+# from flask_limiter import Limiter     
+# from flask_limiter.util import get_remote_address
+from utils.rate_limiter import limiter
+
 
 
 load_dotenv(find_dotenv())
@@ -51,6 +55,7 @@ Create User
 @user_app.route("/create_user")
 class Create_User(MethodView):
 
+    @limiter.limit("2 per hour")
     @user_app.arguments(User_Create_Schema,description="Create a new user",example={"user_name":"Arjun","user_password":"Password@123"})
     @user_app.response(200,User_Schema)
     @jwt_required(optional=True)
@@ -94,6 +99,7 @@ class Create_User(MethodView):
 
 @user_app.route("/reset_password/<user_name>")
 class Reset_User_Password(MethodView):
+    @limiter.limit("3 per hour")
     @jwt_required()
     @user_app.arguments(User_reset_password,description="Reset password",example={
         "user_password":"OldPassword@123",
@@ -127,7 +133,8 @@ class Reset_User_Password(MethodView):
     
 @user_app.route("/generate_token/<user_name>")
 class Create_Access_Token(MethodView):
-    
+
+    @limiter.limit("10 per hour")
     @user_app.arguments(Token_Schema,description="Generate access token",example={
         "user_password":"Password@123"
     })
