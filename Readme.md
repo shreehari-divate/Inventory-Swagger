@@ -23,6 +23,8 @@ This application helps wholesalers manage bulk product orders, track stock level
 - GET → Retrieve all available products.
 - Admins can update product details, adjust stock levels, and remove inactive products.
 
+- Note: As of now only laptop is being used as product. Other products such as mobile, tv and refrigerator will be added soon.
+
 
 ## 3. Order Management
 - GET → Retrieve all orders.
@@ -61,11 +63,9 @@ This application helps wholesalers manage bulk product orders, track stock level
 - Push repo to GitHub.
 - Create a new Web Service in Render.
 - Connect your GitHub repo.
-- Add environment variables from .env.example in Render dashboard.
-- Render will:
-- Install dependencies from requirements.txt.
-- Start app using Procfile:
-web: gunicorn app:app
+- Add environment variables in Render dashboard.
+- Link: https://inventory-swagger.onrender.com/swagger-ui
+
 
 
 
