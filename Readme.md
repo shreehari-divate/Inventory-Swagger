@@ -17,22 +17,24 @@ This application helps wholesalers manage bulk product orders, track stock level
 
 ## 2. Product Management
 - Product catalog includes:
-- id, name, type (enum), sku, timestamp, active (bool), quantity, price.
+- id, name, type (enum), sku, timestamp, active (bool), quantity, price, description.
 - Routes:
-- POST → Add new products to the wholesaler’s catalog.
-- GET → Retrieve all available products.
+- POST: Add new products to the wholesaler’s catalog.
+- GET: Retrieve all available products.
+- PUT: Update the product
+- PATCH: Update the product price
 - Admins can update product details, adjust stock levels, and remove inactive products.
 
 - Note: As of now only laptop is being used as product. Other products such as mobile, tv and refrigerator will be added soon.
 
 
 ## 3. Order Management
-- GET → Retrieve all orders.
-- POST → Buyers can place bulk orders by selecting product type, product, and quantity.
-- PATCH → Cancel an order by providing user_id, order_id, and a valid reason.
-- PATCH → Update product quantity (admin only).
-- GET → Buyers can check their order status via user_order_status.
-- PATCH (Admin only) → Admins can update order status (e.g., shipped, delivered).
+- GET: Retrieve all orders.
+- POST: Buyers can place bulk orders by selecting product type, product, and quantity.
+- PATCH: Cancel an order by providing user_id, order_id, and a valid reason.
+- PATCH: Update product quantity (admin only).
+- GET: Buyers can check their order status via user_order_status.
+- PATCH (Admin only) : Admins can update order status (e.g., shipped, delivered).
 
 
 ## 4. Security & Access Control
